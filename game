@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>لعبة تخمين الرمز</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* نسق اللعبة */
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
+      color: white;
+      text-align: center;
+      margin: 0;
+      padding: 50px 10px;
+    }
+    .game-container {
+      background-color: rgba(255, 255, 255, 0.05);
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    }
+    h1 {
+      margin-bottom: 20px;
+      font-weight: 700;
+      font-size: 26px;
+    }
+    .input-container {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .input-box {
+      width: 60px;
+      height: 60px;
+      background-color: #222;
+      border-radius: 10px;
+      font-size: 26px;
+      color: white;
+      border: 2px solid #444;
+      text-align: center;
+    }
+    .result-box {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+    .green { background-color: #3aaf5f; }
+    .yellow { background-color: #c9a038; }
+    .gray { background-color: #555; }
+    button {
+      margin: 8px 5px;
+      padding: 15px 25px;
+      font-size: 18px;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.3s ease, background-color 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #555;
+      transform: scale(1.1);
+    }
+
+    button:active {
+      transform: scale(0.95);
+    }
+
+    #results {
+      margin-top: 25px;
+    }
+    #attemptsLeft {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #ddd;
+    }
+    img.logo {
+      width: 60px;
+      margin-bottom: 15px;
+    }
+    .instructions {
+      margin-top: 20px;
+      text-align: right;
+      font-size: 14px;
+      background-color: rgba(0,0,0,0.3);
+      padding: 10px;
+      border-radius: 10px;
+    }
+    .achievement {
+      margin-top: 10px;
+      font-size: 15px;
+      color: gold;
+    }
+
+    .message {
+      animation: fadeIn 1s ease-in-out;
+      font-size: 18px;
+      color: #fff;
+      background-color: #333;
+      padding: 10px;
+      margin-top: 15px;
+      border-radius: 10px;
+      max-width: 350px;
+      margin: 10px auto;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    .character-message {
+      font-size: 18px;
+      color: #ffd700;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 12px;
+      border-radius: 12px;
+      margin-top: 20px;
+      max-width: 350px;
+      margin: 10px auto;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <img src="https://cdn-icons-png.flaticon.com/512/2892/2892667.png" class="logo" alt="رمز اللعبة">
+    <h1>لعبة تخمين الرمز</h1>
+    <div class="menu">
+      <button onclick="setRandomCode(); playClickSound()">كود عشوائي</button>
+      <button onclick="promptCode(); playClickSound()">تعيين الكود</button>
+      <button onclick="resetGame(); playClickSound()">إعادة</button>
+    </div>
+
+    <div class="input-container">
+      <input id="in0" maxlength="1" class="input-box" oninput="moveNext(0)">
+      <input id="in1" maxlength="1" class="input-box" oninput="moveNext(1)">
+      <input id="in2" maxlength="1" class="input-box" oninput="moveNext(2)">
+      <input id="in3" maxlength="1" class="input-box" oninput="moveNext(3)">
+    </div>
+
+    <button onclick="checkCode(); playClickSound()">تحقق</button>
+    <p id="attemptsLeft">عدد المحاولات المتبقية: 5</p>
+    <div id="results"></div>
+    <div id="achievement"></div>
+
+    <div class="instructions">
+      <strong>طريقة اللعب:</strong>
+      <ul>
+        <li>أدخل ٤ أرقام لتخمين الرمز السري.</li>
+        <li>اللون الأخضر يعني أن الرقم بمكانه الصحيح.</li>
+        <li>اللون الأصفر يعني أن الرقم صحيح لكن بمكان خاطئ.</li>
+        <li>اللون الرمادي يعني الرقم غير موجود.</li>
+        <li>لديك ٥ محاولات فقط!</li>
+      </ul>
+    </div>
+
+    <div id="characterMessage" class="character-message"></div>
+  </div>  
+
+  <!-- صوتيات -->
+  <audio id="clickSound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
+  <audio id="errorSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+  <audio id="successSound" src="https://www.soundjay.com/human/sounds/applause-01.mp3"></audio>
+  <audio id="bgMusic" src="https://dl.sndup.net/g8pn/%D8%B7%D9%88%D9%8A%D9%84%20%D8%A7%D9%84%D8%B4%D9%88%D9%82.mp3" autoplay loop></audio>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyASU0txHf4wbZVuG7SVCfekXhs4_rEP0Gw",
+      authDomain: "guessinggame-38f90.firebaseapp.com",
+      databaseURL: "https://guessinggame-38f90-default-rtdb.firebaseio.com",
+      projectId: "guessinggame-38f90",
+      storageBucket: "guessinggame-38f90.firebasestorage.app",
+      messagingSenderId: "795367405458",
+      appId: "1:795367405458:web:d05e361d7c7b0b3795334b",
+      measurementId: "G-WN4GDTY49L"
+    };
+
+    // تهيئة Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const database = firebase.database(app);
+
+    let secret = "1234";
+    let attempts = 0;
+    const maxAttempts = 5;
+    let gameOver = false;
+
+    function moveNext(index) {
+      const current = document.getElementById(`in${index}`);
+      if (current.value.length === 1 && index < 3) {
+        document.getElementById(`in${index + 1}`).focus();
+      }
+    }
+
+    function playClickSound() {
+      document.getElementById("clickSound").play();
+    }
+
+    function displayMessage(message) {
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message');
+      messageDiv.textContent = message;
+      document.body.appendChild(messageDiv);
+      setTimeout(() => {
+        messageDiv.style.opacity = 0;
+        setTimeout(() => { messageDiv.remove(); }, 500);
+      }, 3000);
+    }
+
+    function updateCharacterMessage(message) {
+      const charMessage = document.getElementById("characterMessage");
+      charMessage.textContent = message;
+    }
+
+    function checkCode() {
+      if (gameOver || attempts >= maxAttempts) return;
+
+      let guess = "";
+      for (let i = 0; i < 4; i++) {
+        const val = document.getElementById(`in${i}`).value;
+        if (!val.match(/^[0-9]$/)) return;
+        guess += val;
+      }
+
+      const resultRow = document.createElement("div");
+      resultRow.className = "input-container";
+
+      let feedback = Array(4).fill("gray");
+      let secretUsed = Array(4).fill(false);
+      let guessUsed = Array(4).fill(false);
+
+      for (let i = 0; i < 4; i++) {
+        if (guess[i] === secret[i]) {
+          feedback[i] = "green";
+          secretUsed[i] = true;
+          guessUsed[i] = true;
+        }
+      }
+
+      for (let i = 0; i < 4; i++) {
+        if (!guessUsed[i]) {
+          for (let j = 0; j < 4; j++) {
+            if (!secretUsed[j] && guess[i] === secret[j]) {
+              feedback[i] = "yellow";
+              secretUsed[j] = true;
+              break;
+            }
+          }
+        }
+      }
+
+      for (let i = 0; i < 4; i++) {
+        const box = document.createElement("div");
+        box.className = `result-box ${feedback[i]}`;
+        box.textContent = guess[i];
+        resultRow.appendChild(box);
+      }
+
+      document.getElementById("results").appendChild(resultRow);
+
+      if (guess === secret) {
+        document.getElementById("successSound").play();
+        document.getElementById("achievement").textContent = "إنجاز: تم تخمين الكود بنجاح!";
+        updateCharacterMessage("ممتاز! لقد تخمين الرمز بشكل صحيح!");
+        gameOver = true;
+
+        // تخزين الكود في Firebase
+        const gameRef = database.ref('games/' + Date.now());
+        gameRef.set({
+          secretCode: secret,
+          attempts: attempts,
+        });
+
+        return;
+      } else {
+        document.getElementById("errorSound").play();
+        updateCharacterMessage("حاول مجدداً! الرقم خاطئ.");
+      }
+
+      attempts++;
+      document.getElementById("attemptsLeft").textContent = `عدد المحاولات المتبقية: ${maxAttempts - attempts}`;
+
+      if (attempts >= maxAttempts) {
+        gameOver = true;
+        updateCharacterMessage(`انتهت المحاولات! الكود الصحيح كان: ${secret}`);
+        alert("انتهت المحاولات! الكود الصحيح كان: " + secret);
+      }
+
+      clearInputs();
+    }
+
+    function clearInputs() {
+      for (let i = 0; i < 4; i++) {
+        document.getElementById(`in${i}`).value = "";
+      }
+      document.getElementById("in0").focus();
+    }
+
+    function resetGame() {
+      attempts = 0;
+      gameOver = false;
+      document.getElementById("results").innerHTML = "";
+      document.getElementById("attemptsLeft").textContent = `عدد المحاولات المتبقية: ${maxAttempts}`;
+      document.getElementById("achievement").textContent = "";
+      document.getElementById("characterMessage").textContent = "";
+      clearInputs();
+      alert("تمت إعادة اللعبة!");
+    }
+
+    function setRandomCode() {
+      secret = "";
+      for (let i = 0; i < 4; i++) {
+        secret += Math.floor(Math.random() * 10).toString();
+      }
+      alert("تم تعيين كود عشوائي!");
+      resetGame();
+    }
+
+    function promptCode() {
+      const input = prompt("أدخل كود مكوّن من 4 أرقام:");
+      if (input && input.length === 4 && /^\d{4}$/.test(input)) {
+        secret = input;
+        alert("تم تعيين الكود بنجاح!");
+        resetGame();
+      } else {
+        alert("يرجى إدخال كود مكون من 4 أرقام فقط.");
+      }
+    }
+  </script>
+</body>
+</html>
